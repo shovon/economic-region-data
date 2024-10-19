@@ -7,6 +7,7 @@ import ReactMap, {
 	MapRef,
 	FillLayer,
 } from "react-map-gl/maplibre";
+import { DataDrivenPropertyValueSpecification } from "maplibre-gl";
 
 // Function to generate a random color in hex format
 const getRandomColor = () => {
@@ -18,28 +19,11 @@ const getRandomColor = () => {
 	return color;
 };
 
-// Create a layer for your GeoJSON features with random colors
-const randomColorLayer: FillLayer = {
-	id: "random-color-layer",
-	type: "fill",
-	paint: {
-		"fill-color": [
-			"interpolate",
-			["linear"],
-			["to-number", ["get", "ERNAME"]],
-			1,
-			"#FF0000",
-			13,
-			"#0000FF",
-		],
-		"fill-opacity": 0.7,
-	},
-};
-
 export default function MapExample() {
 	const mapRef = useRef<MapRef>(null);
 	const [allData, setAllData] = useState<unknown>(null);
-	const [colorExpression, setColorExpression] = useState<any[]>([]);
+	const [colorExpression, setColorExpression] =
+		useState<DataDrivenPropertyValueSpecification<string>>();
 
 	const [viewState, setViewState] = useState({
 		longitude: -100,
@@ -56,9 +40,11 @@ export default function MapExample() {
 
 	useEffect(() => {
 		if (allData) {
-			const features = (allData as any).features;
+			const features =
+				(allData as { features?: { properties?: { ERUID?: string } }[] })
+					.features ?? [];
 			const uniquePRUIDs = [
-				...new Set(features.map((f: any) => f.properties.ERUID)),
+				...new Set(features.map((f) => f.properties?.ERUID ?? "")),
 			];
 			const randomColors = uniquePRUIDs.map(() => getRandomColor());
 
@@ -67,11 +53,12 @@ export default function MapExample() {
 				["get", "ERUID"],
 				...uniquePRUIDs.flatMap((id, index) => [id, randomColors[index]]),
 				"#000000", // default color
-			]);
+			] as unknown as DataDrivenPropertyValueSpecification<string>);
 		}
 	}, [allData]);
 
 	const randomColorLayer: FillLayer = {
+		source: "",
 		id: "random-color-layer",
 		type: "fill",
 		paint: {
