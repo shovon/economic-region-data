@@ -1,101 +1,106 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+import { useEffect, useRef, useState } from "react";
+import ReactMap, {
+	Source,
+	Layer,
+	MapRef,
+	FillLayer,
+} from "react-map-gl/maplibre";
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+// Function to generate a random color in hex format
+const getRandomColor = () => {
+	const letters = "0123456789ABCDEF";
+	let color = "#";
+	for (let i = 0; i < 6; i++) {
+		color += letters[Math.floor(Math.random() * 16)];
+	}
+	return color;
+};
+
+// Create a layer for your GeoJSON features with random colors
+const randomColorLayer: FillLayer = {
+	id: "random-color-layer",
+	type: "fill",
+	paint: {
+		"fill-color": [
+			"interpolate",
+			["linear"],
+			["to-number", ["get", "ERNAME"]],
+			1,
+			"#FF0000",
+			13,
+			"#0000FF",
+		],
+		"fill-opacity": 0.7,
+	},
+};
+
+export default function MapExample() {
+	const mapRef = useRef<MapRef>(null);
+	const [allData, setAllData] = useState<unknown>(null);
+	const [colorExpression, setColorExpression] = useState<any[]>([]);
+
+	const [viewState, setViewState] = useState({
+		longitude: -100,
+		latitude: 40,
+		zoom: 3.5,
+	});
+
+	useEffect(() => {
+		fetch("/canada.json")
+			.then((resp) => resp.json())
+			.then(setAllData)
+			.catch(console.error);
+	}, []);
+
+	useEffect(() => {
+		if (allData) {
+			const features = (allData as any).features;
+			const uniquePRUIDs = [
+				...new Set(features.map((f: any) => f.properties.ERUID)),
+			];
+			const randomColors = uniquePRUIDs.map(() => getRandomColor());
+
+			setColorExpression([
+				"match",
+				["get", "ERUID"],
+				...uniquePRUIDs.flatMap((id, index) => [id, randomColors[index]]),
+				"#000000", // default color
+			]);
+		}
+	}, [allData]);
+
+	const randomColorLayer: FillLayer = {
+		id: "random-color-layer",
+		type: "fill",
+		paint: {
+			"fill-color": colorExpression,
+			"fill-opacity": 0.7,
+		},
+	};
+
+	return (
+		<div className="relative">
+			<ReactMap
+				{...viewState}
+				ref={mapRef}
+				initialViewState={{
+					latitude: 49.2827,
+					longitude: -123.1207,
+					zoom: 10,
+				}}
+				onMove={(e) => setViewState(e.viewState)}
+				style={{
+					width: "100vw",
+					height: "100vh",
+				}}
+				mapStyle={`https://api.maptiler.com/maps/streets/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_API_KEY}`}
+			>
+				<Source type="geojson" data={allData}>
+					<Layer {...randomColorLayer} />
+				</Source>
+			</ReactMap>
+		</div>
+	);
 }
