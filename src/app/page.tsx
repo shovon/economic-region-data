@@ -27,8 +27,8 @@ export default function MapExample() {
 
 	const [viewState, setViewState] = useState({
 		longitude: -100,
-		latitude: 40,
-		zoom: 3.5,
+		latitude: 65,
+		zoom: 3,
 	});
 
 	useEffect(() => {
@@ -72,11 +72,6 @@ export default function MapExample() {
 			<ReactMap
 				{...viewState}
 				ref={mapRef}
-				initialViewState={{
-					latitude: 49.2827,
-					longitude: -123.1207,
-					zoom: 10,
-				}}
 				onMove={(e) => setViewState(e.viewState)}
 				style={{
 					width: "100vw",
